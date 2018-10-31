@@ -17,11 +17,13 @@ class scraper():
 
     def parseJobsList(self, soup):
         titleList = []
+        urlList = []
         locationList = []
         companyList = []
         for div in soup.findAll("div", {"class", "result"}):
             a = div.find("a")
             titleList.append(a.get('title'))
+            urlList.append('wwww.indeed.com{}'.format(a.get('href')))
 
             company = div.find("span", {"class", "company"})
             companyList.append(company.getText().strip())
@@ -30,6 +32,7 @@ class scraper():
             if location == None:
                 location = div.find("span", {"class", "location"})
             locationList.append(location.getText().strip())
+        print(urlList)
         return titleList, locationList, companyList
 
     def log_jobs(self, titles, locations, companies):
