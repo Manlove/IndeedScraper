@@ -39,7 +39,6 @@ class scraper():
     def getJobPage(self, job_url):
         job_site = website(job_url)
 
-
 class job_log():
     def __init__(self):
         self.conn = sq.connect('indeed_jobs.db')
@@ -69,7 +68,6 @@ class website():
         pass
 
 indeed = scraper()
-
 a = indeed.indeed_log.ex('SELECT title FROM jobs')
 for b in a:
     print(b)
