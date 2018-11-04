@@ -9,7 +9,7 @@ class scraper():
         self.url = 'https://www.indeed.com/jobs?q=bioinformatics&sort=date'
         self.getIndeedJobsListPage(self.url)
         self.titles, self.locations, self.companies = self.parseJobsList(self.soup)
-        self.log_jobs(self.titles, self.locations, self.companies)
+        self.logJobs(self.titles, self.locations, self.companies)
 
     def getIndeedJobsListPage(self, url):
         page = urlr.get(url)
@@ -35,9 +35,12 @@ class scraper():
         print(urlList)
         return titleList, locationList, companyList
 
-    def log_jobs(self, titles, locations, companies):
+    def logJobs(self, titles, locations, companies):
         for i in range(0, len(titles)):
             self.indeed_log.insert(titles[i], companies[i], locations[i])
+
+    def getJobPage(self, job_url):
+        job_site = website(job_url)
 
 class job_log():
     def __init__(self):
@@ -57,8 +60,17 @@ class job_log():
     def reset(self):
         self.ex("DROP TABLE jobs")
 
-indeed = scraper()
+class website():
+    def __init__(self, url):
+        self.url = url
+        page = urlr.get(self.url)
+        self.soup = bs(page.content, 'html.parser')
+        self.parseJob(self.soup)
 
+    def parseJob(self, soup):
+        pass
+
+indeed = scraper()
 a = indeed.indeed_log.ex('SELECT title FROM jobs')
 for b in a:
     print(b)
