@@ -17,7 +17,6 @@ class scraper():
         """Takes a url and retrieves the page, opens the page with BeautifulSoup"""
         page = urlr.get(url)
         self.soup = bs(page.content, 'html.parser')
-
     def parseJobsList(self, soup):
         """Takes the soup of a page and creates jobpage objects for the jobs in the soup"""
         for div in soup.findAll("div", {"class", "result"}):
@@ -33,9 +32,9 @@ class scraper():
                 location = div.find("span", {"class", "location"})
             location = location.getText().strip()
             job = jobpage(title, company, location, url, jobID)
-            if job.logCheck:
-                self.jobs.append(job)
 
+            if self.indeed_log.checkJobLogged(job.getID()):
+                self.jobs.append(job)
     def logJobs(self, titles, locations, companies):
         for i in range(0, len(titles)):
             self.indeed_log.insert(titles[i], companies[i], locations[i])
@@ -46,18 +45,16 @@ class job_log():
         self.curs = self.conn.cursor()
         self.ex = self.curs.execute
         self.setup()
-
     def setup(self):
         self.ex('CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, title TEXT, company TEXT, location TEXT, date_applied text)')
-
     def insert(self, title, company, location, date_applied = None):
         if not date_applied:
             date_applied = ""
         self.ex("INSERT INTO jobs (id, title, company, location, date_applied) VALUES (?, ?, ?, ?, ?)", (title, company, location, date_applied))
-
+    def checkJobLogged(self, job_id):
+        print(self.ex("SELECT id FROM jobs WHERE id == ?", job_id))
     def reset(self):
         self.ex("DROP TABLE jobs")
-
     def shutdown(self):
         self.conn.close()
 
@@ -68,25 +65,17 @@ class jobpage():
         self.soup = bs(page.content, 'html.parser')
         self.parseJob(self.soup)
         self.checkDiscrip()
-
     def parseJob(self, soup):
         self.discription = ""
         for div in self.soup.findAll("div", class_="jobsearch-JobComponent-description"):
             for p in div.findAll(['p', 'ul']):
                 self.discription += " {}".format(p.getText()).upper()
-
     def checkDiscrip(self):
-        print("~~~~~~~~~~~~~~~~")
-        print(self.title)
         if not (self.checkEd("PhD", self.discription) and not (self.checkEd("BS", self.discription) or self.checkEd("MS", self.discription))):
             if not refindall("python", self.discription):
                 print(refindall("PYTHON", self.discription))
         else:
-            print('no')
-            print(self.checkEd("BS", self.discription))
-            print(self.checkEd("MS", self.discription))
-            print(self.checkEd("PhD", self.discription))
-
+            print("Requires PhD")
     def checkEd(self, position, string):
         strStrt = "[\s\r\n\\/]"
         bach = "BACHELOR'?S?"
@@ -102,9 +91,8 @@ class jobpage():
         elif position == "PhD":
             regex = "{}{}|{}{}|^{}|^{}".format(strStrt, doct, strStrt, phd, doct, phd)
         return refindall(regex, string.upper())
-
-    def logCheck(self):
-        return self.check
+    def getID(self):
+        return self.id
 
 indeed = scraper()
 #a = indeed.indeed_log.ex('SELECT title FROM jobs')
