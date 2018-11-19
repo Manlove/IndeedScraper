@@ -67,7 +67,7 @@ class jobpage():
         page = urlr.get(self.url)
         self.soup = bs(page.content, 'html.parser')
         self.parseJob(self.soup)
-        self.checkDisc()
+        self.checkDiscrip()
 
     def parseJob(self, soup):
         self.discription = ""
@@ -75,14 +75,34 @@ class jobpage():
             for p in div.findAll(['p', 'ul']):
                 self.discription += " {}".format(p.getText()).upper()
 
-    def checkDisc(self):
+    def checkDiscrip(self):
+        print("~~~~~~~~~~~~~~~~")
         print(self.title)
-        if refindall("[\s\r\n](B\.?S\.?|BACHELOR'?S?)", self.discription) or refindall("[\s\r\n](M\.?S\.?|MASTER'?S?|GRADUATE)", self.discription) and not refindall("[\s\r\n](P\.?H\.?D\.?|DOCTORATE)", self.discription):
-            print("this job requires a bachelor's")
+        if not (self.checkEd("PhD", self.discription) and not (self.checkEd("BS", self.discription) or self.checkEd("MS", self.discription))):
+            if not refindall("python", self.discription):
+                print(refindall("PYTHON", self.discription))
         else:
-            print(refindall("[\s\r\n](B\.?S\.?|BACHELOR'?S?)", self.discription))
-            print(refindall("[\s\r\n](M\.?S\.?|MASTER'?S?)", self.discription))
-            print(refindall("[\s\r\n](P\.?H\.?D\.?|DOCTORATE)", self.discription))
+            print('no')
+            print(self.checkEd("BS", self.discription))
+            print(self.checkEd("MS", self.discription))
+            print(self.checkEd("PhD", self.discription))
+
+    def checkEd(self, position, string):
+        strStrt = "[\s\r\n\\/]"
+        bach = "BACHELOR'?S?"
+        bs = "B\.?S\.?"
+        mast = "MASTER'?S?"
+        ms = "M\.?S\.?"
+        phd = "P\.?H\.?D\.?"
+        doct = "DOCTORATE"
+        if position == "BS":
+            regex = "{}{}|{}{}|^{}|^{}".format(strStrt, bach, strStrt, bs, bach, bs)
+        elif position == "MS":
+            regex = "{}{}|{}{}|{}GRADUATE|^{}|^{}|^GRADUATE".format(strStrt, mast, strStrt, ms, strStrt, mast, ms)
+        elif position == "PhD":
+            regex = "{}{}|{}{}|^{}|^{}".format(strStrt, doct, strStrt, phd, doct, phd)
+        return refindall(regex, string.upper())
+
     def logCheck(self):
         return self.check
 
