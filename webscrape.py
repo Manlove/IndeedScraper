@@ -11,14 +11,15 @@ class application():
     def __init__(self):
         self.jobDatabase = job_database()
         self.getJobs()
-        print("Jobs have been logged")
+        b = self.jobDatabase.ex("SELECT title FROM jobs")
+        for i in b.fetchall():
+            print(i)
         self.exit()
     def getJobs(self):
         webscraper = scraper(self.jobDatabase)
         jobsList = webscraper.getJobs()
         for job in jobsList:
-            self.jobDatabase.insert( job.getInfo )
-        print(len(jobsList))
+            self.jobDatabase.insert( job )
     def checkJobs(self):
         pass
     def exit(self):
@@ -67,29 +68,31 @@ class job_database():
         self.ex = self.curs.execute
         self.setup()
     def setup(self):
-        self.ex('CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, date_applied TEXT)')
+        self.ex('CREATE TABLE IF NOT EXISTS jobs (jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, date_applied TEXT)')
         # Creates a sql table in the database if one is not there
-    def insert(self, jobInfo):
+    def insert(self, job):
         try:
-            self.ex("INSERT INTO jobs (id, jobID, title, company, location, date_applied) VALUES (?, ?, ?, ?, ?, ?)", jobInfo)
+            print("Logging {}".format(job.get('id')[0]))
+            self.ex("INSERT INTO jobs (jobID, title, company, location, date_applied) VALUES (?, ?, ?, ?, ?)", job.getInfo())
         except:
-            print("An Error has occured with {}:{}\n\tFailed to log".format(jobID, title))
+            items = job.get("id", "title")
+            print("An Error has occured with {}:{}\n\tFailed to log".format(items[0], items[1]))
         # Inserts a job into the sql database
     def checkJobLogged(self, jobID):
         idCheck = self.ex("SELECT jobID FROM jobs WHERE jobID == ?", (jobID,))
-        if idCheck.fetchall() != []:
-            return True
+        return idCheck.fetchall() != []
         # Checks if a jobID exists, returns True if YES, False if NO
     def reset(self):
         self.ex("DROP TABLE jobs")
         # Drops the sql table, used for troubleshooting
     def shutdown(self):
+        self.conn.commit()
         self.conn.close()
         # Closes the sql connection, should be run before closing the application
 class job_page():
     def __init__(self, title, company, location, url, id):
-        self.title, self.company, self.location, self.url, self.id, self.check = title, company, location, url, id, True
-        page = urlr.get(self.url)
+        self.attributes = {"title":title, "company":company, "location":location, "url":url, "id":id}
+        page = urlr.get(self.attributes["url"])
         self.soup = bs(page.content, 'html.parser')
         self.parseJob(self.soup)
         #self.checkDiscrip()
@@ -121,12 +124,24 @@ class job_page():
         elif position == "PhD":
             regex = "{}{}|{}{}|^{}|^{}".format(strStrt, doct, strStrt, phd, doct, phd)
         return refindall(regex, string.upper())
-    def getID(self):
-        return self.id
+    def get(self, *attributes):
+        if len(attributes) < 1:
+            raise Exception("""\nJob get command usage:\n\tPassing the following arguments will return the following attributes\n\t- id: Indeed ID\n\t- title: Job Title\n\t- company: Company Name\n\t- location: Job Location\n\t- url: Indeed URL""")
+        else:
+            argReturn = []
+        for arg in attributes:
+            argReturn.append(self.attributes[arg.lower()])
+        return tuple(argReturn)
     def getInfo(self):
-        return (self.id, self.title, self.company, self.location, "")
+        output = (self.attributes["id"],
+        self.attributes["title"],
+        self.attributes["company"],
+        self.attributes["location"], "")
+        return output
 
+# job = job_page("Job", "Business", "Earth", "http://www.google.com", "12345")
+# job.get("wrong arg")
+#
+# a = job_database()
+# a.reset()
 indeed = application()
-#a = indeed.indeed_log.ex('SELECT title FROM jobs')
-# for b in a:
-#     print(b)
