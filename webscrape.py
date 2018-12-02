@@ -3,18 +3,38 @@ webscrape.py retrieves a list of jobs from the indeed website, retrieves the pag
 '''
 # Import Libraries
 for imports in [1]:
-    import sqlite3 as sq
-    import requests as urlr
+    import sqlite3 as sq, requests as urlr, tkinter as tk
     from bs4 import BeautifulSoup as bs
     from re import findall as refindall
     from time import localtime
-class application():
-    def __init__(self):
+    from tkinter import messagebox
+class Application(tk.Frame):
+    def __init__(self, master = None):
+        self.root = tk.Tk()
+        self.root.title("Job Tracker")
+        self.root.protocol("WM_DELETE_WINDOW", self.exit)
+        master = self.root
+        super().__init__(master)
+        self.pack()
+        self.create_widgets()
         self.jobDatabase = job_database()
         self.getJobs()
         self.appliedJobs()
         self.checkJobs()
         self.exit()
+    def create_widgets(self):
+        self.get_jobs_label = tk.Label(self, text = "Get Jobs").grid(row = 1, column = 0, padx = 5, stick = "w")
+        self.get_jobs_button = tk.Button(self, text = "Get Jobs", width = 20, command = self.getJobs).grid(row = 1, column = 2)
+
+        self.check_applied_label = tk.Label(self, text = "Number of applied jobs").grid(row = 2, column = 0, padx = 5, stick = "w")
+        self.check_applied_button = tk.Button(self, text = "Count Applied", width = 20, command = self.appliedJobs).grid(row = 2, column = 2)
+
+        self.logged_jobs_label = tk.Label(self, text = "Show Jobs").grid(row = 3, column = 0, padx = 5, stick = "w")
+        self.logged_jobs_button = tk.Button(self, text = "Show Jobs", width = 20, command = self.checkJobs).grid(row = 3, column = 2)
+
+        self.output = tk.Text(self, width = 50)
+        self.output.grid(row = 4, column = 0, columnspan = 6)
+
     def getJobs(self):
         webscraper = scraper(self.jobDatabase)
         jobsList = webscraper.getJobs()
@@ -33,7 +53,9 @@ class application():
                                     WHERE date_applied != ""''')
         print(jobs.fetchone()[0])
     def exit(self):
-        self.jobDatabase.shutdown()
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.jobDatabase.shutdown()
+            self.root.destroy()
 
 class scraper():
     '''Retrieves the jobs list from Indeed site and logs the jobs that have not been logged'''
@@ -157,4 +179,4 @@ class job_page():
 #
 # a = job_database()
 # a.reset()
-indeed = application()
+indeed = Application()
