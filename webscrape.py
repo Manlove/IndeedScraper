@@ -18,19 +18,14 @@ class Application(tk.Frame):
         self.pack()
         self.create_widgets()
         self.jobDatabase = job_database()
-        self.getJobs()
-        self.appliedJobs()
-        self.checkJobs()
-        self.exit()
+
     def create_widgets(self):
-        self.get_jobs_label = tk.Label(self, text = "Get Jobs").grid(row = 1, column = 0, padx = 5, stick = "w")
-        self.get_jobs_button = tk.Button(self, text = "Get Jobs", width = 20, command = self.getJobs).grid(row = 1, column = 2)
 
-        self.check_applied_label = tk.Label(self, text = "Number of applied jobs").grid(row = 2, column = 0, padx = 5, stick = "w")
-        self.check_applied_button = tk.Button(self, text = "Count Applied", width = 20, command = self.appliedJobs).grid(row = 2, column = 2)
+        self.get_jobs_button = tk.Button(self, text = "Get Jobs", width = 20, command = self.getJobs).grid(row = 1, column = 1)
 
-        self.logged_jobs_label = tk.Label(self, text = "Show Jobs").grid(row = 3, column = 0, padx = 5, stick = "w")
-        self.logged_jobs_button = tk.Button(self, text = "Show Jobs", width = 20, command = self.checkJobs).grid(row = 3, column = 2)
+        self.check_applied_button = tk.Button(self, text = "Count Applied", width = 20, command = self.appliedJobs).grid(row = 1, column = 2)
+
+        self.logged_jobs_button = tk.Button(self, text = "Show Jobs", width = 20, command = self.checkJobs).grid(row = 1, column = 3)
 
         self.output = tk.Text(self, width = 50)
         self.output.grid(row = 4, column = 0, columnspan = 6)
@@ -179,4 +174,5 @@ class job_page():
 #
 # a = job_database()
 # a.reset()
-indeed = Application()
+app = Application()
+app.mainloop()
