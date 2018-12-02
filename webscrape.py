@@ -37,21 +37,23 @@ class Application(tk.Frame):
             info = job.get("title", "company")
             output += "{}: {}\n".format(info[0], info[1])
             self.jobDatabase.insert( job )
+        if output == "":
+            output = "No new jobs"
         self.printToScreen( output )
     def checkJobs(self):
         currentTime = localtime()
         currentTime = currentTime.tm_year * 365 + currentTime.tm_yday
-        jobs = self.jobDatabase.ex('''SELECT title, url FROM jobs
+        jobs = self.jobDatabase.ex('''SELECT title, company FROM jobs
                                     WHERE date_retrieved >= ?
                                     ORDER BY date_retrieved ASC''', (currentTime - 30,))
         output = ""
         for i in jobs.fetchall():
-            output += "{}\t{}".format(i[0], i[1])
-        printToScreen( output )
+            output += "{}: {}\n".format(i[0], i[1])
+        self.printToScreen( output )
     def appliedJobs(self):
         jobs = self.jobDatabase.ex('''SELECT COUNT(title) FROM jobs
                                     WHERE date_applied != ""''')
-        printToScreen(jobs.fetchone()[0])
+        self.printToScreen(jobs.fetchone()[0])
     def exit(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.jobDatabase.shutdown()
