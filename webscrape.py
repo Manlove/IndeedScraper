@@ -16,9 +16,9 @@ class Application(tk.Frame):
         master = self.root
         super().__init__(master)
         self.pack()
-        self.create_widgets()
+        self.createWidgets()
         self.jobDatabase = job_database()
-    def create_widgets(self):
+    def createWidgets(self):
         self.get_jobs_button = tk.Button(self, text = "Get Jobs", width = 20, command = self.getJobs).grid(row = 1, column = 1)
         self.check_applied_button = tk.Button(self, text = "Count Applied", width = 20, command = self.appliedJobs).grid(row = 1, column = 2)
         self.logged_jobs_button = tk.Button(self, text = "Show Jobs", width = 20, command = self.checkJobs).grid(row = 1, column = 3)
@@ -32,20 +32,26 @@ class Application(tk.Frame):
     def getJobs(self):
         webscraper = scraper(self.jobDatabase)
         jobsList = webscraper.getJobs()
+        output = ""
         for job in jobsList:
+            info = job.get("title", "company")
+            output += "{}: {}\n".format(info[0], info[1])
             self.jobDatabase.insert( job )
+        self.printToScreen( output )
     def checkJobs(self):
         currentTime = localtime()
         currentTime = currentTime.tm_year * 365 + currentTime.tm_yday
         jobs = self.jobDatabase.ex('''SELECT title, url FROM jobs
                                     WHERE date_retrieved >= ?
                                     ORDER BY date_retrieved ASC''', (currentTime - 30,))
+        output = ""
         for i in jobs.fetchall():
-            print("{}\t{}".format(i[0], i[1]))
+            output += "{}\t{}".format(i[0], i[1])
+        printToScreen( output )
     def appliedJobs(self):
         jobs = self.jobDatabase.ex('''SELECT COUNT(title) FROM jobs
                                     WHERE date_applied != ""''')
-        print(jobs.fetchone()[0])
+        printToScreen(jobs.fetchone()[0])
     def exit(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.jobDatabase.shutdown()
