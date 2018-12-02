@@ -12,9 +12,8 @@ class application():
     def __init__(self):
         self.jobDatabase = job_database()
         self.getJobs()
-        b = self.jobDatabase.ex("SELECT * FROM jobs")
-        for i in b.fetchall():
-            print(i)
+        self.appliedJobs()
+        self.checkJobs()
         self.exit()
     def getJobs(self):
         webscraper = scraper(self.jobDatabase)
@@ -22,7 +21,17 @@ class application():
         for job in jobsList:
             self.jobDatabase.insert( job )
     def checkJobs(self):
-        pass
+        currentTime = localtime()
+        currentTime = currentTime.tm_year * 365 + currentTime.tm_yday
+        jobs = self.jobDatabase.ex('''SELECT title, url FROM jobs
+                                    WHERE date_retrieved >= ?
+                                    ORDER BY date_retrieved ASC''', (currentTime - 30,))
+        for i in jobs.fetchall():
+            print("{}\t{}".format(i[0], i[1]))
+    def appliedJobs(self):
+        jobs = self.jobDatabase.ex('''SELECT COUNT(title) FROM jobs
+                                    WHERE date_applied != ""''')
+        print(jobs.fetchone()[0])
     def exit(self):
         self.jobDatabase.shutdown()
 
@@ -71,11 +80,11 @@ class job_database():
         self.ex = self.curs.execute
         self.setup()
     def setup(self):
-        self.ex('CREATE TABLE IF NOT EXISTS jobs (jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, date_retrieved INTEGER, date_applied TEXT)')
+        self.ex('CREATE TABLE IF NOT EXISTS jobs (jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, url TEXT, date_retrieved INTEGER, date_applied TEXT)')
         # Creates a sql table in the database if one is not there
     def insert(self, job):
         try:
-            self.ex("INSERT INTO jobs (jobID, title, company, location, date_retrieved, date_applied) VALUES (?, ?, ?, ?, ?, ?)", job.getInfo())
+            self.ex("INSERT INTO jobs (jobID, title, company, location, url, date_retrieved, date_applied) VALUES (?, ?, ?, ?, ?, ?, ?)", job.getInfo())
         except:
             items = job.get("id", "title")
             print("An Error has occured with {}:{}\n\tFailed to log".format(items[0], items[1]))
@@ -139,6 +148,7 @@ class job_page():
         self.attributes["title"],
         self.attributes["company"],
         self.attributes["location"],
+        self.attributes["url"],
         self.attributes["time"], "")
         return output
 
