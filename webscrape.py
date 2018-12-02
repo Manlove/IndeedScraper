@@ -18,18 +18,17 @@ class Application(tk.Frame):
         self.pack()
         self.create_widgets()
         self.jobDatabase = job_database()
-
     def create_widgets(self):
-
         self.get_jobs_button = tk.Button(self, text = "Get Jobs", width = 20, command = self.getJobs).grid(row = 1, column = 1)
-
         self.check_applied_button = tk.Button(self, text = "Count Applied", width = 20, command = self.appliedJobs).grid(row = 1, column = 2)
-
         self.logged_jobs_button = tk.Button(self, text = "Show Jobs", width = 20, command = self.checkJobs).grid(row = 1, column = 3)
-
         self.output = tk.Text(self, width = 50)
         self.output.grid(row = 4, column = 0, columnspan = 6)
-
+    def printToScreen(self, string = "", clear = True):
+        if clear:
+            self.output.delete(1.0, tk.END)
+        if string != "":
+            self.output.insert(1.0, string)
     def getJobs(self):
         webscraper = scraper(self.jobDatabase)
         jobsList = webscraper.getJobs()
