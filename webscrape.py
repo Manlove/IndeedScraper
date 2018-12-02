@@ -7,11 +7,12 @@ for imports in [1]:
     import requests as urlr
     from bs4 import BeautifulSoup as bs
     from re import findall as refindall
+    from time import localtime
 class application():
     def __init__(self):
         self.jobDatabase = job_database()
         self.getJobs()
-        b = self.jobDatabase.ex("SELECT title FROM jobs")
+        b = self.jobDatabase.ex("SELECT * FROM jobs")
         for i in b.fetchall():
             print(i)
         self.exit()
@@ -41,6 +42,8 @@ class scraper():
         self.soup = bs(page.content, 'html.parser')
         # Retrieves the Beautiful soup of the indeed jobs list page
     def parseJobsList(self, soup):
+        currentTime = localtime()
+        currentTime = currentTime.tm_year * 365 + currentTime.tm_yday
         """Takes the soup of a page and creates job_page objects for the jobs in the soup"""
         for div in soup.findAll("div", {"class", "result"}):
             jobID = ""
@@ -58,7 +61,7 @@ class scraper():
                 location = div.find("span", {"class", "location"})
             location = location.getText().strip()
             if jobID != "":
-                self.jobs.append( job_page(title, company, location, url, jobID) )
+                self.jobs.append( job_page(title, company, location, url, jobID, currentTime) )
         # Creates job objects from the jobs in the job list.
 class job_database():
     '''sql database that holds the job information'''
@@ -68,12 +71,11 @@ class job_database():
         self.ex = self.curs.execute
         self.setup()
     def setup(self):
-        self.ex('CREATE TABLE IF NOT EXISTS jobs (jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, date_applied TEXT)')
+        self.ex('CREATE TABLE IF NOT EXISTS jobs (jobID TEXT UNIQUE, title TEXT, company TEXT, location TEXT, date_retrieved INTEGER, date_applied TEXT)')
         # Creates a sql table in the database if one is not there
     def insert(self, job):
         try:
-            print("Logging {}".format(job.get('id')[0]))
-            self.ex("INSERT INTO jobs (jobID, title, company, location, date_applied) VALUES (?, ?, ?, ?, ?)", job.getInfo())
+            self.ex("INSERT INTO jobs (jobID, title, company, location, date_retrieved, date_applied) VALUES (?, ?, ?, ?, ?, ?)", job.getInfo())
         except:
             items = job.get("id", "title")
             print("An Error has occured with {}:{}\n\tFailed to log".format(items[0], items[1]))
@@ -90,8 +92,8 @@ class job_database():
         self.conn.close()
         # Closes the sql connection, should be run before closing the application
 class job_page():
-    def __init__(self, title, company, location, url, id):
-        self.attributes = {"title":title, "company":company, "location":location, "url":url, "id":id}
+    def __init__(self, title, company, location, url, id, currentTime):
+        self.attributes = {"title":title, "company":company, "location":location, "url":url, "id":id, "time":currentTime}
         page = urlr.get(self.attributes["url"])
         self.soup = bs(page.content, 'html.parser')
         self.parseJob(self.soup)
@@ -126,7 +128,7 @@ class job_page():
         return refindall(regex, string.upper())
     def get(self, *attributes):
         if len(attributes) < 1:
-            raise Exception("""\nJob get command usage:\n\tPassing the following arguments will return the following attributes\n\t- id: Indeed ID\n\t- title: Job Title\n\t- company: Company Name\n\t- location: Job Location\n\t- url: Indeed URL""")
+            raise Exception("""\nJob get command usage:\n\tPassing the following arguments will return the following attributes\n\t- id: Indeed ID\n\t- title: Job Title\n\t- company: Company Name\n\t- location: Job Location\n\t- url: Indeed URL\n\t-time: date when job was retrieved""")
         else:
             argReturn = []
         for arg in attributes:
@@ -136,7 +138,8 @@ class job_page():
         output = (self.attributes["id"],
         self.attributes["title"],
         self.attributes["company"],
-        self.attributes["location"], "")
+        self.attributes["location"],
+        self.attributes["time"], "")
         return output
 
 # job = job_page("Job", "Business", "Earth", "http://www.google.com", "12345")
